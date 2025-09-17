@@ -1,0 +1,17 @@
+🤖 Vocabu Bot - Complete Guide
+
+📝 How to use:
+Send any text in Ukrainian or in English
+Get instant English or Ukrainian translation
+
+⚡ Commands:
+/start - Welcome message
+/help - This help guide
+
+📏 Limits:
+• Max 5000 characters per message
+• Rate limits apply (Google's policy)
+
+🎯 Examples:
+• "Привіт світ" → "Hi world"
+• "Hello world" → "Привіт світ"

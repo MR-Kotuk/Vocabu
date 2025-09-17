@@ -15,6 +15,7 @@ spring:
 
 telegram:
   bot:
+    admin-chat-id: ${TELEGRAM_ADMIN_CHAT_ID}
     username: eng_vocabu_bot
     token: ${TELEGRAM_BOT_TOKEN}
 
