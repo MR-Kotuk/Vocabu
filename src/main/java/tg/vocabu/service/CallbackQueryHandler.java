@@ -1,36 +1,33 @@
 package tg.vocabu.service;
 
-import java.util.HashSet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import tg.vocabu.bot.TelegramBot;
 import tg.vocabu.model.entity.CallbackQueryTemp;
-import tg.vocabu.model.entity.Vocabulary;
 import tg.vocabu.model.entity.Word;
 import tg.vocabu.model.entity.WordTemp;
 import tg.vocabu.model.enums.CallbackQuery;
 import tg.vocabu.repository.CallbackQueryRepository;
-import tg.vocabu.repository.VocabularyRepository;
+import tg.vocabu.repository.WordRepository;
 import tg.vocabu.repository.WordTempRepository;
+import tg.vocabu.util.LanguageUtil;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class CallbackQueryHandler {
 
+  private final ReplyKeyboardService replyKeyboardService;
+  private final CommandHandler commandHandler;
+
   private final WordTempRepository wordTempRepository;
-  private final VocabularyRepository vocabularyRepository;
   private final CallbackQueryRepository callbackQueryRepository;
+  private final WordRepository wordRepository;
 
-  public void handleAddToVocabulary(TelegramBot bot, long chatId) {
+  public void handleAddToVocabulary(SendMessage message, long chatId) {
 
-    log.debug("Handling Add to Vocabulary callback query");
-
-    SendMessage message = new SendMessage();
-    message.setChatId(chatId);
+    log.trace("Handling Add to Vocabulary callback query");
 
     WordTemp wordTemp = wordTempRepository.findById(chatId).orElse(null);
 
@@ -38,41 +35,42 @@ public class CallbackQueryHandler {
 
       wordTempRepository.delete(wordTemp);
 
-      Vocabulary vocabulary = vocabularyRepository.findById(chatId).orElse(Vocabulary.builder().chatId(chatId).words(new HashSet<>()).build());
-      Word word = Word.builder().english(wordTemp.getEnglish()).ukrainian(wordTemp.getUkrainian()).score(0).build();
+      if (!wordRepository.existsByEnglishOrUkrainian(wordTemp.getEnglish(), wordTemp.getUkrainian())) {
 
-      vocabulary.getWords().add(word);
-      vocabularyRepository.save(vocabulary);
+        Word word = Word.builder().chatId(chatId).english(wordTemp.getEnglish()).ukrainian(wordTemp.getUkrainian()).score(0).build();
+        wordRepository.save(word);
 
-      message.setText("Added word to vocabulary:\n\n" + "🇬🇧 " + word.getEnglish() + " - 🇺🇦 " + word.getUkrainian());
+        message.setText(
+            "Added word with own translation to vocabulary:\n\n" + LanguageUtil.formatTranslationPair(word.getEnglish(), word.getUkrainian()));
+
+        replyKeyboardService.getDefaultKeyboard(message);
+      } else {
+        message.setText("This word pair already exists in your vocabulary.");
+      }
     } else {
-      return;
-    }
-
-    try {
-      bot.execute(message);
-    } catch (TelegramApiException e) {
-      e.printStackTrace();
+      commandHandler.handleSomethingWentWrong(message);
     }
   }
 
-  public void handleAddOwnTranslation(TelegramBot bot, long chatId) {
+  public void handleAddOwnTranslation(SendMessage message, long chatId) {
 
-    if (!wordTempRepository.existsById(chatId)) {
+    log.trace("Handling Add Own Translation callback query");
+
+    callbackQueryRepository.deleteById(chatId);
+    WordTemp wordTemp = wordTempRepository.findById(chatId).orElse(null);
+
+    if (wordTemp == null) {
+      commandHandler.handleSomethingWentWrong(message);
       return;
     }
 
-    callbackQueryRepository.deleteById(chatId);
+    if (wordRepository.existsByEnglish(wordTemp.getEnglish())) {
+      message.setText("This word pair already exists in your vocabulary.");
+      return;
+    }
+
     callbackQueryRepository.save(new CallbackQueryTemp(chatId, CallbackQuery.ADD_OWN_TRANSLATION));
 
-    log.debug("Handling Add Own Translation callback query");
-
-    SendMessage message = new SendMessage(String.valueOf(chatId), "Send your own translation:");
-
-    try {
-      bot.execute(message);
-    } catch (TelegramApiException e) {
-      e.printStackTrace();
-    }
+    message.setText("Send your own translation:");
   }
 }

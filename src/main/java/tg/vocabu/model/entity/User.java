@@ -1,28 +1,29 @@
 package tg.vocabu.model.entity;
 
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Getter
-@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "vocabularies")
-public class Vocabulary {
+@Table(name = "users")
+public class User {
 
-  @Id private Long chatId;
+  @Id private Long id;
+  private long chatId;
 
-  @ElementCollection(fetch = FetchType.EAGER)
-  private Set<Word> words;
+  private String firstName;
+  private String lastName;
+  private String userName;
+
+  private String languageCode;
+
+  private boolean isBot;
 }

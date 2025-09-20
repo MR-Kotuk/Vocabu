@@ -45,7 +45,7 @@ public class GoogleTranslationService {
     String cachedResult = translationCache.get(cacheKey);
 
     if (cachedResult != null) {
-      log.debug("Returning cached translation for: {}", text.substring(0, Math.min(50, text.length())));
+      log.trace("Returning cached translation for: {}", text.substring(0, Math.min(50, text.length())));
       return cachedResult;
     }
 
@@ -219,20 +219,19 @@ public class GoogleTranslationService {
   }
 
   private String parseLanguageDetection(String responseBody) throws Exception {
-
     try {
-      Pattern pattern = Pattern.compile(",null,\"([a-z]{2,})\"");
-      Matcher matcher = pattern.matcher(responseBody);
+      @SuppressWarnings("unchecked")
+      List<Object> outerArray = objectMapper.readValue(responseBody, List.class);
 
-      if (matcher.find()) {
-        return matcher.group(1);
+      if (outerArray.size() >= 3 && outerArray.get(2) instanceof String) {
+        return (String) outerArray.get(2);
       }
 
       return "unknown";
 
     } catch (Exception e) {
       log.error("Failed to parse language detection response: {}", responseBody);
-      throw new TranslationException("Language detection parsing failed: " + e.getMessage());
+      throw new TranslationException("Language detection parsing failed: " + e.getMessage(), e);
     }
   }
 

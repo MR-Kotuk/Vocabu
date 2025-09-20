@@ -20,6 +20,4 @@ public class WordTemp {
 
   private String english;
   private String ukrainian;
-
-  private int score;
 }

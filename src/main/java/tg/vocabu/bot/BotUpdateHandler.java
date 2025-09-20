@@ -25,12 +25,13 @@ public class BotUpdateHandler {
 
   public void handle(Update update, TelegramBot bot) {
 
+    SendMessage message = new SendMessage();
+
     if (update.hasMessage() && update.getMessage().hasText()) {
 
       String text = update.getMessage().getText();
       long chatId = update.getMessage().getChatId();
 
-      SendMessage message = new SendMessage();
       message.setChatId(String.valueOf(chatId));
 
       Command command = Command.fromString(text);
@@ -41,18 +42,10 @@ public class BotUpdateHandler {
         log.warn("Unauthorized access attempt by chat: {}", chatId);
         message.setText("❌ You are not authorized to use this command.");
 
-        try {
-          bot.execute(message);
-        } catch (TelegramApiException e) {
-          log.error("Error sending unauthorized message: {}", e.getMessage());
-          e.printStackTrace();
-        }
-        return;
-      }
+      } else if (!commandHandler.havePendingCommand(message, chatId, text)) {
 
-      if (!commandHandler.havePendingCommand(message, chatId, text)) {
         switch (Objects.requireNonNull(command)) {
-          case START -> commandHandler.handleStartCommand(isAdmin, message, chatId);
+          case START -> commandHandler.handleStartCommand(isAdmin, update, message, chatId);
           case HELP -> commandHandler.handleHelpCommand(isAdmin, message, chatId);
           case VOCABULARY -> commandHandler.handleVocabulary(message, chatId);
           case USERS -> commandHandler.handleUsersStatus(message);
@@ -62,25 +55,27 @@ public class BotUpdateHandler {
           default -> commandHandler.handleTranslateCommand(message, chatId, text);
         }
       }
-
-      try {
-        bot.execute(message);
-      } catch (TelegramApiException e) {
-        log.error("Error sending message: {}", e.getMessage());
-        e.printStackTrace();
-      }
-
     } else if (update.hasCallbackQuery()) {
 
       String callbackData = update.getCallbackQuery().getData();
       long chatId = update.getCallbackQuery().getMessage().getChatId();
 
-      log.debug("Received callback query: {}", callbackData);
+      message.setChatId(String.valueOf(chatId));
+
+      log.trace("Received callback query: {}", callbackData);
 
       switch (CallbackQuery.valueOf(callbackData)) {
-        case ADD_TO_VOCABULARY -> callbackQueryHandler.handleAddToVocabulary(bot, chatId);
-        case ADD_OWN_TRANSLATION -> callbackQueryHandler.handleAddOwnTranslation(bot, chatId);
+        case ADD_TO_VOCABULARY -> callbackQueryHandler.handleAddToVocabulary(message, chatId);
+        case ADD_OWN_TRANSLATION -> callbackQueryHandler.handleAddOwnTranslation(message, chatId);
+        default -> commandHandler.handleSomethingWentWrong(message);
       }
+    }
+
+    try {
+      bot.execute(message);
+    } catch (TelegramApiException e) {
+      log.error("Error sending message: {}", e.getMessage());
+      e.printStackTrace();
     }
   }
 }
