@@ -9,7 +9,7 @@ Get instant English or Ukrainian translation
 /help - This help guide
 
 📏 Limits:
-• Max 5000 characters per message
+• Max 3 words per translation message
 • Rate limits apply (Google's policy)
 
 🎯 Examples:

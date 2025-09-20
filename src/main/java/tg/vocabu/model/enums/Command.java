@@ -1,4 +1,4 @@
-package tg.vocabu.model;
+package tg.vocabu.model.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -8,8 +8,10 @@ import lombok.RequiredArgsConstructor;
 public enum Command {
   START("/start", false),
   HELP("/help", false),
+  VOCABULARY("/vocabulary", false),
   STATUS("/status", true),
   STATS("/stats", true),
+  USERS("/users", true),
   CLEAR("/clear", true),
   UNKNOWN("", false);
 

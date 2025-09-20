@@ -1,4 +1,4 @@
-package tg.vocabu.model;
+package tg.vocabu.model.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -7,7 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum LanguageCode {
   EN("en"),
-  UK("uk");
+  UK("uk"),
+  UNKNOWN("unknown");
 
   private final String code;
 }

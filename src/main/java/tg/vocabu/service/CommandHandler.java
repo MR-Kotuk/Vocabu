@@ -1,13 +1,26 @@
 package tg.vocabu.service;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import tg.vocabu.config.FilePathConfig;
 import tg.vocabu.exception.TranslationException;
-import tg.vocabu.model.LanguageCode;
+import tg.vocabu.model.entity.CallbackQueryTemp;
+import tg.vocabu.model.entity.Vocabulary;
+import tg.vocabu.model.entity.Word;
+import tg.vocabu.model.entity.WordTemp;
+import tg.vocabu.model.enums.CallbackQuery;
+import tg.vocabu.model.enums.LanguageCode;
+import tg.vocabu.repository.CallbackQueryRepository;
+import tg.vocabu.repository.VocabularyRepository;
+import tg.vocabu.repository.WordTempRepository;
 import tg.vocabu.util.FileReader;
 import tg.vocabu.util.LanguageUtil;
 
@@ -18,9 +31,48 @@ public class CommandHandler {
 
   private final GoogleTranslationService translationService;
 
+  private final WordTempRepository wordTempRepository;
+  private final VocabularyRepository vocabularyRepository;
+  private final CallbackQueryRepository callbackQueryRepository;
+
+  public void handleUsersStatus(SendMessage message) {
+
+    log.debug("Received users status command from admin");
+
+    long usersCount = vocabularyRepository.count();
+    message.setText("Users count: " + usersCount);
+  }
+
+  public void handleVocabulary(SendMessage message, Long chatId) {
+
+    log.debug("Received vocabulary command from chat: {}", chatId);
+
+    Vocabulary vocabulary = vocabularyRepository.findById(chatId).orElse(null);
+    String vocabularyHeader = "==🇬🇧== Vocabulary ==🇺🇦== - % -\n\n";
+
+    if (vocabulary != null && !vocabulary.getWords().isEmpty()) {
+
+      StringBuilder table = new StringBuilder();
+      table.append(vocabularyHeader);
+
+      for (Word word : vocabulary.getWords()) {
+        table.append(word.getEnglish()).append("  ➜  ").append(word.getUkrainian()).append("  -  ").append(word.getScore()).append("%\n");
+      }
+
+      message.setText(table.toString());
+    } else {
+      message.setText(vocabularyHeader + "\nNothing yet...");
+    }
+  }
+
   public void handleStartCommand(boolean isAdmin, SendMessage message, Long chatId) {
 
     log.debug("Received start command from chat: {}", chatId);
+
+    if (!vocabularyRepository.existsById(chatId)) {
+      Vocabulary vocabulary = Vocabulary.builder().chatId(chatId).words(new HashSet<>()).build();
+      vocabularyRepository.save(vocabulary);
+    }
 
     String filePath = isAdmin ? FilePathConfig.ADMIN_START_MESSAGE_FILE : FilePathConfig.START_MESSAGE_FILE;
     message.setText(FileReader.readFile(filePath));
@@ -91,54 +143,118 @@ public class CommandHandler {
     }
   }
 
+  public boolean havePendingCommand(SendMessage message, Long chatId, String text) {
+
+    log.debug("Checking for pending command for chat: {}", chatId);
+    CallbackQueryTemp callbackQueryTemp = callbackQueryRepository.findById(chatId).orElse(null);
+
+    if (callbackQueryTemp != null && callbackQueryTemp.getCallbackQuery() == CallbackQuery.ADD_OWN_TRANSLATION) {
+
+      callbackQueryRepository.delete(callbackQueryTemp);
+      return handleAddWithOwnTranslation(message, chatId, text);
+    }
+
+    return false;
+  }
+
+  private boolean handleAddWithOwnTranslation(SendMessage message, Long chatId, String text) {
+
+    WordTemp wordTemp = wordTempRepository.findById(chatId).orElse(null);
+
+    if (wordTemp != null) {
+
+      wordTempRepository.delete(wordTemp);
+
+      Vocabulary vocabulary = vocabularyRepository.findById(chatId).orElse(Vocabulary.builder().chatId(chatId).words(new HashSet<>()).build());
+      Word word = Word.builder().english(wordTemp.getEnglish()).ukrainian(text).score(0).build();
+
+      vocabulary.getWords().add(word);
+      vocabularyRepository.save(vocabulary);
+
+      message.setText(
+          "Added word with own translation to vocabulary:\n\n" + LanguageUtil.formatTranslationPair(word.getEnglish(), word.getUkrainian()));
+
+      return true;
+    }
+
+    return false;
+  }
+
   public void handleTranslateCommand(SendMessage message, Long chatId, String text) {
 
     log.debug("Received translate command from chat: {}", chatId);
 
-    if (text.length() > 5000) {
-      message.setText("❌ Text too long! Supports up to 5000 characters per message.");
+    String[] words = text.trim().split("\\s+");
+
+    if (words.length > 3) {
+      message.setText("❌ Text too long! Supports only max 3 words.");
       return;
     }
 
-    log.debug("Translating text: '{}'", text.substring(0, Math.min(50, text.length())));
+    log.debug("Translating text: '{}'", text);
 
-    String translatedText;
-    String autoDetectedLang;
-    LanguageCode to;
+    String eng, ukr;
+    LanguageCode from = LanguageCode.EN;
 
     try {
-      autoDetectedLang = translationService.detectLanguage(text);
+      String autoDetectedLang = translationService.detectLanguage(text);
+      LanguageCode detected = LanguageCode.valueOf(autoDetectedLang.toUpperCase());
 
-      if (LanguageCode.UK.getCode().equals(autoDetectedLang)) {
-        to = LanguageCode.EN;
-        translatedText = translateText(text, LanguageCode.UK, LanguageCode.EN);
-      } else if (LanguageCode.EN.getCode().equals(autoDetectedLang)) {
-        to = LanguageCode.UK;
-        translatedText = translateText(text, LanguageCode.EN, LanguageCode.UK);
-      } else {
-        message.setText(
-            "❌ Unsupported language detected: "
-                + autoDetectedLang
-                + " "
-                + LanguageUtil.getLanguageFlag(autoDetectedLang)
-                + "\n\nCurrently, only Ukrainian 🇺🇦 and English 🇬🇧 are supported for translation.");
-        return;
+      switch (detected) {
+        case EN -> {
+          eng = text;
+          ukr = translationService.translate(text, LanguageCode.EN.getCode(), LanguageCode.UK.getCode());
+        }
+        case UK, UNKNOWN -> {
+          from = LanguageCode.UK;
+
+          eng = translationService.translate(text, LanguageCode.UK.getCode(), LanguageCode.EN.getCode());
+          ukr = text;
+        }
+        default -> {
+          log.error("Unsupported language detected: {}", autoDetectedLang);
+          message.setText(
+              """
+              ❌ Unsupported language detected: %s %s
+
+              Currently supports only English 🇬🇧 and Ukrainian 🇺🇦.
+              """
+                  .formatted(autoDetectedLang, LanguageUtil.getLanguageFlag(autoDetectedLang)));
+          return;
+        }
       }
+
+      wordTempRepository.deleteById(chatId);
+
+      WordTemp wordTemp = WordTemp.builder().chatId(chatId).english(eng).ukrainian(ukr).build();
+      wordTempRepository.save(wordTemp);
+
     } catch (TranslationException e) {
       log.error("Language detection failed: {}", e.getMessage());
       message.setText("❌ Language detection failed\n\n" + "Error: " + e.getMessage());
       return;
     }
 
-    message.setText(LanguageUtil.getLanguageFlag(autoDetectedLang) + " -> " + LanguageUtil.getLanguageFlag(to.getCode()) + "\n\n" + translatedText);
     log.debug("Translation successful");
-  }
 
-  private String translateText(String text, LanguageCode from, LanguageCode to) {
-    try {
-      return translationService.translate(text, from.getCode(), to.getCode());
-    } catch (Exception e) {
-      return null;
+    InlineKeyboardButton addToVocabulary = new InlineKeyboardButton("Add to vocabulary");
+    addToVocabulary.setCallbackData(CallbackQuery.ADD_TO_VOCABULARY.toString());
+
+    InlineKeyboardButton addWithOwnTranslation = new InlineKeyboardButton("Add with own translation");
+    addWithOwnTranslation.setCallbackData(CallbackQuery.ADD_OWN_TRANSLATION.toString());
+
+    List<InlineKeyboardButton> firstRow = List.of(addToVocabulary);
+    List<List<InlineKeyboardButton>> rows = new ArrayList<>(List.of(firstRow));
+
+    if (from == LanguageCode.EN) {
+      List<InlineKeyboardButton> secondRow = List.of(addWithOwnTranslation);
+      rows.add(secondRow);
     }
+
+    InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+    markup.setKeyboard(rows);
+
+    message.setText(LanguageUtil.formatTranslationPair(eng, ukr));
+    message.setReplyMarkup(markup);
   }
 }

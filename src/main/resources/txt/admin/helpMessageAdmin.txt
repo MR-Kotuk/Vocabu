@@ -9,16 +9,17 @@ Send any text in Ukrainian or in English
 Get instant English or Ukrainian translation
 
 ⚡ Commands:
+  User Commands:
 /start - Welcome message
 /help - This help guide
+/vocabulary - Show vocabulary list
+
+  Admin Commands:
 /status - Check Google Translate status
 /stats - Translation statistics
+/users - Show users count
 /clear - Clear translation cache
 
 📏 Limits:
-• Max 5000 characters per message
+• Max 3 words per translation message
 • Rate limits apply (Google's policy)
-
-🎯 Examples:
-• "Привіт світ" → "Hi world"
-• "Hello world" → "Привіт світ"

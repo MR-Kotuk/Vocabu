@@ -5,6 +5,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class LanguageUtil {
 
+  public static String formatTranslationPair(String eng, String ukr) {
+    return "🇬🇧 " + eng + " - " + "🇺🇦 " + ukr;
+  }
+
   public static String getLanguageFlag(String langCode) {
     return switch (langCode.toLowerCase()) {
       case "uk" -> "🇺🇦";

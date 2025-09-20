@@ -8,7 +8,9 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import tg.vocabu.config.BotConfig;
-import tg.vocabu.model.Command;
+import tg.vocabu.model.enums.CallbackQuery;
+import tg.vocabu.model.enums.Command;
+import tg.vocabu.service.CallbackQueryHandler;
 import tg.vocabu.service.CommandHandler;
 
 @Slf4j
@@ -17,6 +19,7 @@ import tg.vocabu.service.CommandHandler;
 public class BotUpdateHandler {
 
   private final CommandHandler commandHandler;
+  private final CallbackQueryHandler callbackQueryHandler;
 
   private final BotConfig botConfig;
 
@@ -47,13 +50,17 @@ public class BotUpdateHandler {
         return;
       }
 
-      switch (Objects.requireNonNull(command)) {
-        case START -> commandHandler.handleStartCommand(isAdmin, message, chatId);
-        case HELP -> commandHandler.handleHelpCommand(isAdmin, message, chatId);
-        case STATUS -> commandHandler.handleStatusCheckCommand(message, chatId);
-        case STATS -> commandHandler.handleStatsCheckCommand(message, chatId);
-        case CLEAR -> commandHandler.handleClearCacheCommand(message, chatId);
-        default -> commandHandler.handleTranslateCommand(message, chatId, text);
+      if (!commandHandler.havePendingCommand(message, chatId, text)) {
+        switch (Objects.requireNonNull(command)) {
+          case START -> commandHandler.handleStartCommand(isAdmin, message, chatId);
+          case HELP -> commandHandler.handleHelpCommand(isAdmin, message, chatId);
+          case VOCABULARY -> commandHandler.handleVocabulary(message, chatId);
+          case USERS -> commandHandler.handleUsersStatus(message);
+          case STATUS -> commandHandler.handleStatusCheckCommand(message, chatId);
+          case STATS -> commandHandler.handleStatsCheckCommand(message, chatId);
+          case CLEAR -> commandHandler.handleClearCacheCommand(message, chatId);
+          default -> commandHandler.handleTranslateCommand(message, chatId, text);
+        }
       }
 
       try {
@@ -62,8 +69,18 @@ public class BotUpdateHandler {
         log.error("Error sending message: {}", e.getMessage());
         e.printStackTrace();
       }
+
     } else if (update.hasCallbackQuery()) {
-      log.debug("Received callback query: {}", update.getCallbackQuery().getData());
+
+      String callbackData = update.getCallbackQuery().getData();
+      long chatId = update.getCallbackQuery().getMessage().getChatId();
+
+      log.debug("Received callback query: {}", callbackData);
+
+      switch (CallbackQuery.valueOf(callbackData)) {
+        case ADD_TO_VOCABULARY -> callbackQueryHandler.handleAddToVocabulary(bot, chatId);
+        case ADD_OWN_TRANSLATION -> callbackQueryHandler.handleAddOwnTranslation(bot, chatId);
+      }
     }
   }
 }

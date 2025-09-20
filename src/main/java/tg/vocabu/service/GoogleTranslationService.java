@@ -116,7 +116,7 @@ public class GoogleTranslationService {
       boolean available = isAvailable();
       long responseTime = System.currentTimeMillis() - startTime;
 
-      return String.format("✅ Google Translate: ONLINE\n" + "Response time: %dms\n" + "Test translation: 'Test' → '%s'", responseTime, available);
+      return String.format("✅ Google Translate: ONLINE\n" + "Response time: %dms\n" + "Is Available: %s", responseTime, available);
 
     } catch (Exception e) {
       return "❌ Google Translate: OFFLINE\nError: " + e.getMessage();
