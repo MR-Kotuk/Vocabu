@@ -66,37 +66,6 @@ public class GoogleTranslationService {
     }
   }
 
-  public String detectLanguage(String text) throws TranslationException {
-
-    if (text == null || text.trim().isEmpty()) {
-      throw new TranslationException("Text cannot be null or empty");
-    }
-
-    try {
-      String encodedText = URLEncoder.encode(text, StandardCharsets.UTF_8);
-      String url = String.format("%s?client=gtx&sl=auto&tl=en&dt=t&dt=bd&q=%s", TRANSLATE_URL, encodedText);
-
-      HttpRequest request =
-          HttpRequest.newBuilder().uri(URI.create(url)).timeout(Duration.ofSeconds(15)).header("User-Agent", USER_AGENT).GET().build();
-
-      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-      if (response.statusCode() == 200) {
-
-        String detectedLang = parseLanguageDetection(response.body());
-
-        log.debug("Detected language: {} for text: '{}'", detectedLang, text.substring(0, Math.min(30, text.length())));
-        return detectedLang;
-
-      } else {
-        throw new TranslationException("Language detection failed with status: " + response.statusCode());
-      }
-
-    } catch (Exception e) {
-      throw new TranslationException("Language detection failed: " + e.getMessage(), e);
-    }
-  }
-
   public boolean isAvailable() {
 
     try {
@@ -180,12 +149,11 @@ public class GoogleTranslationService {
       }
 
       try {
-        @SuppressWarnings("unchecked")
+
         List<List<Object>> outerArray = objectMapper.readValue(responseBody, List.class);
 
         if (!outerArray.isEmpty() && outerArray.get(0) != null) {
 
-          @SuppressWarnings("unchecked")
           List<Object> innerArray = outerArray.get(0);
 
           StringBuilder result = new StringBuilder();
@@ -193,7 +161,6 @@ public class GoogleTranslationService {
 
             if (item instanceof List) {
 
-              @SuppressWarnings("unchecked")
               List<Object> translationPart = (List<Object>) item;
 
               if (!translationPart.isEmpty() && translationPart.get(0) instanceof String) {
@@ -202,7 +169,7 @@ public class GoogleTranslationService {
             }
           }
 
-          if (result.length() > 0) {
+          if (!result.isEmpty()) {
             return result.toString();
           }
         }
@@ -215,23 +182,6 @@ public class GoogleTranslationService {
     } catch (Exception e) {
       log.error("Failed to parse translation response: {}", responseBody);
       throw new TranslationException("Translation parsing failed: " + e.getMessage());
-    }
-  }
-
-  private String parseLanguageDetection(String responseBody) throws Exception {
-    try {
-      @SuppressWarnings("unchecked")
-      List<Object> outerArray = objectMapper.readValue(responseBody, List.class);
-
-      if (outerArray.size() >= 3 && outerArray.get(2) instanceof String) {
-        return (String) outerArray.get(2);
-      }
-
-      return "unknown";
-
-    } catch (Exception e) {
-      log.error("Failed to parse language detection response: {}", responseBody);
-      throw new TranslationException("Language detection parsing failed: " + e.getMessage(), e);
     }
   }
 

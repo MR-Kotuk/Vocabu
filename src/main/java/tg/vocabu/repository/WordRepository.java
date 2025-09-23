@@ -1,11 +1,12 @@
 package tg.vocabu.repository;
 
+import jakarta.transaction.Transactional;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import tg.vocabu.model.entity.Word;
+import tg.vocabu.model.entity.user.Word;
 
 @Repository
 public interface WordRepository extends JpaRepository<Word, Long> {
@@ -17,4 +18,7 @@ public interface WordRepository extends JpaRepository<Word, Long> {
   boolean existsByEnglish(@Param("english") String english);
 
   List<Word> findByChatIdAndLearned(long chatId, boolean learned);
+
+  @Transactional
+  void deleteByChatId(long chatId);
 }

@@ -1,4 +1,4 @@
-package tg.vocabu.model.entity;
+package tg.vocabu.model.entity.user;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

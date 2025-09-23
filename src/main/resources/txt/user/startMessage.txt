@@ -8,3 +8,4 @@ I use Google Translate to help you learn vocabulary by translating Ukrainian tex
 ⚡ Commands:
 /help - Show detailed help
 /vocabulary - Show vocabulary list
+/learned - Show learned words

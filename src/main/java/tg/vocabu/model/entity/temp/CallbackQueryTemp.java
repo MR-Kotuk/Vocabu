@@ -1,4 +1,4 @@
-package tg.vocabu.model.entity;
+package tg.vocabu.model.entity.temp;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import tg.vocabu.model.enums.CallbackQuery;
 
 @Entity
 @Getter
@@ -19,5 +18,5 @@ public class CallbackQueryTemp {
 
   @Id private Long chatId;
 
-  private CallbackQuery callbackQuery;
+  private String callbackQuery;
 }

@@ -9,9 +9,14 @@ public enum Command {
   START("/start", false),
   HELP("/help", false),
   VOCABULARY("/vocabulary", false),
+  LEARNED("/learned", false),
+  EXERCISE("/exercise", false),
+  DICTIONARY("/dictionary", false),
+  USERS("/users", true),
+  USERS_LIST("/users_list", true),
   STATUS("/status", true),
   STATS("/stats", true),
-  USERS("/users", true),
+  CLEAR_VOCABULARY("/clear_vocabulary", false),
   CLEAR("/clear", true),
   UNKNOWN("", false);
 

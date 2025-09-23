@@ -11,15 +11,4 @@ public enum LanguageCode {
   UNKNOWN("unknown");
 
   private final String code;
-
-  public static LanguageCode fromString(String text) {
-
-    for (LanguageCode lang : LanguageCode.values()) {
-      if (lang.code.equalsIgnoreCase(text)) {
-        return lang;
-      }
-    }
-
-    return UNKNOWN;
-  }
 }

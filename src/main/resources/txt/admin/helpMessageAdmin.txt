@@ -13,12 +13,17 @@ Get instant English or Ukrainian translation
 /start - Welcome message
 /help - This help guide
 /vocabulary - Show vocabulary list
+/learned - Show learned words
+/dictionary - Show info about dictionary
+
+/clear_vocabulary - Clear all words in vocabulary
 
   Admin Commands:
 /status - Check Google Translate status
 /stats - Translation statistics
+/clear - Clear google translation cache
 /users - Show users count
-/clear - Clear translation cache
+/users_list - Show users list
 
 📏 Limits:
 • Max 3 words per translation message

@@ -7,6 +7,11 @@ Get instant English or Ukrainian translation
 ⚡ Commands:
 /start - Welcome message
 /help - This help guide
+/vocabulary - Show vocabulary list
+/learned - Show learned words
+/dictionary - Show info about dictionary
+
+/clear_vocabulary - Clear all words in vocabulary
 
 📏 Limits:
 • Max 3 words per translation message

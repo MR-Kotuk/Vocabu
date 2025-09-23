@@ -16,22 +16,25 @@ public class ReplyKeyboardService {
 
   public void getDefaultKeyboard(SendMessage message) {
 
-    ReplyKeyboardMarkup replyKeyboard = new ReplyKeyboardMarkup();
-    replyKeyboard.setResizeKeyboard(true);
-    replyKeyboard.setOneTimeKeyboard(false);
+    if (message.getReplyMarkup() == null) {
 
-    KeyboardRow row1 = new KeyboardRow();
-    row1.add("/vocabulary");
-    row1.add("/learned");
+      ReplyKeyboardMarkup replyKeyboard = new ReplyKeyboardMarkup();
+      replyKeyboard.setResizeKeyboard(true);
+      replyKeyboard.setOneTimeKeyboard(false);
 
-    KeyboardRow row2 = new KeyboardRow();
-    row2.add("/exercise");
+      KeyboardRow row1 = new KeyboardRow();
+      row1.add("/vocabulary");
+      row1.add("/learned");
 
-    List<KeyboardRow> rows = new ArrayList<>();
-    rows.add(row1);
-    rows.add(row2);
+      KeyboardRow row2 = new KeyboardRow();
+      row2.add("/exercise");
 
-    replyKeyboard.setKeyboard(rows);
-    message.setReplyMarkup(replyKeyboard);
+      List<KeyboardRow> rows = new ArrayList<>();
+      rows.add(row1);
+      rows.add(row2);
+
+      replyKeyboard.setKeyboard(rows);
+      message.setReplyMarkup(replyKeyboard);
+    }
   }
 }

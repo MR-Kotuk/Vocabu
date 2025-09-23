@@ -8,10 +8,13 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import tg.vocabu.config.BotConfig;
-import tg.vocabu.model.enums.CallbackQuery;
+import tg.vocabu.model.entity.dto.CallbackQueryDto;
 import tg.vocabu.model.enums.Command;
-import tg.vocabu.service.CallbackQueryHandler;
-import tg.vocabu.service.CommandHandler;
+import tg.vocabu.service.command.handler.AdminCommandHandler;
+import tg.vocabu.service.command.handler.CallbackQueryHandler;
+import tg.vocabu.service.command.handler.CommandHandler;
+import tg.vocabu.service.command.handler.ExerciseCommandHandler;
+import tg.vocabu.service.command.handler.GoogleTranslatorHandler;
 
 @Slf4j
 @Service
@@ -19,6 +22,9 @@ import tg.vocabu.service.CommandHandler;
 public class BotUpdateHandler {
 
   private final CommandHandler commandHandler;
+  private final ExerciseCommandHandler exerciseCommandHandler;
+  private final AdminCommandHandler adminCommandHandler;
+  private final GoogleTranslatorHandler googleTranslatorHandler;
   private final CallbackQueryHandler callbackQueryHandler;
 
   private final BotConfig botConfig;
@@ -42,16 +48,21 @@ public class BotUpdateHandler {
         log.warn("Unauthorized access attempt by chat: {}", chatId);
         message.setText("❌ You are not authorized to use this command.");
 
-      } else if (!commandHandler.havePendingCommand(message, chatId, text)) {
+      } else if (!commandHandler.havePendingCommand(bot, message, chatId, text)) {
 
         switch (Objects.requireNonNull(command)) {
           case START -> commandHandler.handleStartCommand(isAdmin, update, message, chatId);
           case HELP -> commandHandler.handleHelpCommand(isAdmin, message, chatId);
           case VOCABULARY -> commandHandler.handleVocabulary(message, chatId);
-          case USERS -> commandHandler.handleUsersStatus(message);
-          case STATUS -> commandHandler.handleStatusCheckCommand(message, chatId);
-          case STATS -> commandHandler.handleStatsCheckCommand(message, chatId);
-          case CLEAR -> commandHandler.handleClearCacheCommand(message, chatId);
+          case LEARNED -> commandHandler.handleLearned(message, chatId);
+          case EXERCISE -> exerciseCommandHandler.handleExercise(message, chatId);
+          case DICTIONARY -> commandHandler.handleDictionaryInfoCommand(message, chatId);
+          case STATS -> googleTranslatorHandler.handleStatsCheckCommand(message, chatId);
+          case STATUS -> googleTranslatorHandler.handleStatusCheckCommand(message, chatId);
+          case CLEAR -> googleTranslatorHandler.handleClearCacheCommand(message, chatId);
+          case CLEAR_VOCABULARY -> commandHandler.handleClearVocabulary(message, chatId);
+          case USERS -> adminCommandHandler.handleUsersStatus(message);
+          case USERS_LIST -> adminCommandHandler.handleUserList(message);
           default -> commandHandler.handleTranslateCommand(message, chatId, text);
         }
       }
@@ -64,10 +75,20 @@ public class BotUpdateHandler {
 
       log.trace("Received callback query: {}", callbackData);
 
-      switch (CallbackQuery.valueOf(callbackData)) {
-        case ADD_TO_VOCABULARY -> callbackQueryHandler.handleAddToVocabulary(message, chatId);
-        case ADD_OWN_TRANSLATION -> callbackQueryHandler.handleAddOwnTranslation(message, chatId);
-        default -> commandHandler.handleSomethingWentWrong(message);
+      String[] parts = callbackData.split(":");
+
+      if (parts.length == 2) {
+        CallbackQueryDto callbackQueryDto = CallbackQueryDto.extract(callbackData);
+        long data = Long.parseLong(callbackQueryDto.getData());
+
+        switch (callbackQueryDto.getCallbackQuery()) {
+          case ADD_TO_VOCABULARY -> callbackQueryHandler.handleAddToVocabulary(bot, message, chatId, data);
+          case ADD_OWN_TRANSLATION -> callbackQueryHandler.handleAddOwnTranslation(message, chatId, data);
+          case ADD_TO_DICTIONARY -> callbackQueryHandler.handleAddSuggestedWordToDictionary(message, data);
+          case BAN_USER -> callbackQueryHandler.handleBanUser(message, data);
+          case UNBAN_USER -> callbackQueryHandler.handleUnbanUser(message, data);
+          default -> commandHandler.handleSomethingWentWrong(message);
+        }
       }
     }
 
