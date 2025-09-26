@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import tg.vocabu.model.entity.user.Word;
 
 @Entity
 @Getter
@@ -26,4 +27,8 @@ public class DictionaryWord {
 
   private String english;
   private String ukrainian;
+
+  public Word toWord() {
+    return Word.builder().english(english).ukrainian(ukrainian).build();
+  }
 }

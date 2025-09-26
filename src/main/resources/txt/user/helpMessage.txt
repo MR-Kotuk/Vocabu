@@ -10,6 +10,7 @@ Get instant English or Ukrainian translation
 /vocabulary - Show vocabulary list
 /learned - Show learned words
 /dictionary - Show info about dictionary
+/exercise - Start an exercise
 
 /clear_vocabulary - Clear all words in vocabulary
 

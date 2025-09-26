@@ -2,15 +2,19 @@ package tg.vocabu.model.entity.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import tg.vocabu.model.enums.CallbackQuery;
 
 @Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class CallbackQueryDto {
 
-  private final CallbackQuery callbackQuery;
+  private CallbackQuery callbackQuery;
 
-  private final String data;
+  private String data;
 
   public static CallbackQueryDto extract(String callbackQuery) {
 

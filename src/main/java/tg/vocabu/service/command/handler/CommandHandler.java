@@ -30,6 +30,7 @@ import tg.vocabu.service.ReplyKeyboardService;
 import tg.vocabu.service.TranslationService;
 import tg.vocabu.util.FileReader;
 import tg.vocabu.util.LanguageUtil;
+import tg.vocabu.util.StringUtil;
 
 @Slf4j
 @Service
@@ -274,6 +275,8 @@ public class CommandHandler {
       return;
     }
 
+    text = StringUtil.normalizeText(text);
+
     log.debug("Translating text: '{}'", text);
 
     String eng, ukr;
@@ -358,6 +361,8 @@ public class CommandHandler {
       translated = googleTranslatorService.translate(text, detected.getCode(), target.getCode());
       translationMethod = TranslationMethod.GOOGLE_TRANSLATOR;
     }
+
+    translated = StringUtil.normalizeText(translated);
 
     return new TranslationResult(translated, translationMethod);
   }

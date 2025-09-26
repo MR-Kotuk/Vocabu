@@ -7,10 +7,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class ListUtil {
 
+  private static final Random random = new Random();
+
   public static <T> T popRandomElementFromList(List<T> words) {
-
-    int index = new Random().nextInt(words.size());
-
-    return words.remove(index);
+    return words.remove(random.nextInt(words.size()));
   }
 }

@@ -1,8 +1,3 @@
 Welcome to Vocabu Bot!
-I use Google Translate to help you learn vocabulary by translating Ukrainian text to English.
-
-🇺🇦 How to use:
-• Send me text in Ukrainian → Get English translation
-• Send me text in English → Get Ukrainian translation
 
 ⚡ If you need assistance, use the /help command.

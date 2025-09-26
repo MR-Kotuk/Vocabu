@@ -32,4 +32,25 @@ public class Word {
   private int score;
 
   @Builder.Default private boolean learned = false;
+
+  public boolean incrementScore(int increment) {
+
+    this.score += increment;
+
+    if (this.score >= 100) {
+      this.score = 100;
+      this.learned = true;
+    }
+
+    return this.learned;
+  }
+
+  public void decrementScore(int decrement) {
+
+    this.score -= decrement;
+
+    if (this.score < 0) {
+      this.score = 0;
+    }
+  }
 }

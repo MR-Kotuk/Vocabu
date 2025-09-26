@@ -9,6 +9,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import tg.vocabu.config.BotConfig;
 import tg.vocabu.model.entity.dto.CallbackQueryDto;
+import tg.vocabu.model.enums.CallbackQuery;
 import tg.vocabu.model.enums.Command;
 import tg.vocabu.service.command.handler.AdminCommandHandler;
 import tg.vocabu.service.command.handler.CallbackQueryHandler;
@@ -53,16 +54,23 @@ public class BotUpdateHandler {
         switch (Objects.requireNonNull(command)) {
           case START -> commandHandler.handleStartCommand(isAdmin, update, message, chatId);
           case HELP -> commandHandler.handleHelpCommand(isAdmin, message, chatId);
+
           case VOCABULARY -> commandHandler.handleVocabulary(message, chatId);
           case LEARNED -> commandHandler.handleLearned(message, chatId);
+
           case EXERCISE -> exerciseCommandHandler.handleExercise(message, chatId);
+
           case DICTIONARY -> commandHandler.handleDictionaryInfoCommand(message, chatId);
+
           case STATS -> googleTranslatorHandler.handleStatsCheckCommand(message, chatId);
           case STATUS -> googleTranslatorHandler.handleStatusCheckCommand(message, chatId);
+
           case CLEAR -> googleTranslatorHandler.handleClearCacheCommand(message, chatId);
           case CLEAR_VOCABULARY -> commandHandler.handleClearVocabulary(message, chatId);
+
           case USERS -> adminCommandHandler.handleUsersStatus(message);
           case USERS_LIST -> adminCommandHandler.handleUserList(message);
+
           default -> commandHandler.handleTranslateCommand(message, chatId, text);
         }
       }
@@ -75,20 +83,30 @@ public class BotUpdateHandler {
 
       log.trace("Received callback query: {}", callbackData);
 
-      String[] parts = callbackData.split(":");
+      CallbackQueryDto callbackQueryDto = new CallbackQueryDto();
+      Long data = null;
 
-      if (parts.length == 2) {
-        CallbackQueryDto callbackQueryDto = CallbackQueryDto.extract(callbackData);
-        long data = Long.parseLong(callbackQueryDto.getData());
+      if (callbackData.contains(":")) {
+        callbackQueryDto = CallbackQueryDto.extract(callbackData);
+        data = Long.parseLong(callbackQueryDto.getData());
+      } else {
+        callbackQueryDto.setCallbackQuery(CallbackQuery.valueOf(callbackData));
+      }
 
-        switch (callbackQueryDto.getCallbackQuery()) {
-          case ADD_TO_VOCABULARY -> callbackQueryHandler.handleAddToVocabulary(bot, message, chatId, data);
-          case ADD_OWN_TRANSLATION -> callbackQueryHandler.handleAddOwnTranslation(message, chatId, data);
-          case ADD_TO_DICTIONARY -> callbackQueryHandler.handleAddSuggestedWordToDictionary(message, data);
-          case BAN_USER -> callbackQueryHandler.handleBanUser(message, data);
-          case UNBAN_USER -> callbackQueryHandler.handleUnbanUser(message, data);
-          default -> commandHandler.handleSomethingWentWrong(message);
-        }
+      switch (callbackQueryDto.getCallbackQuery()) {
+        case ADD_TO_VOCABULARY -> callbackQueryHandler.handleAddToVocabulary(bot, message, chatId, data);
+        case ADD_TO_DICTIONARY -> callbackQueryHandler.handleAddSuggestedWordToDictionary(message, data);
+
+        case ADD_OWN_TRANSLATION -> callbackQueryHandler.handleAddOwnTranslation(message, chatId, data);
+
+        case BAN_USER -> callbackQueryHandler.handleBanUser(message, data);
+        case UNBAN_USER -> callbackQueryHandler.handleUnbanUser(message, data);
+
+        case START_EXERCISE -> exerciseCommandHandler.handleExercise(message, chatId);
+        case SKIP_EXERCISE -> callbackQueryHandler.handleSkipExercise(message, chatId);
+        case CORRECT_EXERCISE_ANSWER, WRONG_EXERCISE_ANSWER -> callbackQueryHandler.handleExerciseAnswer(message, chatId, callbackData);
+
+        default -> commandHandler.handleSomethingWentWrong(message);
       }
     }
 
